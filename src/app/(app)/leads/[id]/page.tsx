@@ -59,6 +59,13 @@ export default async function LeadDetail({ params }: { params: Promise<{ id: str
                 </tr>
               ))}
             </Table>
+          ) : lead.status === "duplicate" ? (
+            <p className="text-sm text-muted">
+              Recorded as a duplicate of an account that already has an owner, so it was not scored or routed again. Its evidence is kept here and the owner was notified.
+              {lead.duplicateOfLeadId && <> See the <A href={`/leads/${lead.duplicateOfLeadId}`}>original lead</A>.</>}
+            </p>
+          ) : lead.status === "rejected" ? (
+            <p className="text-sm text-muted">Rejected: {lead.rejectionReason}</p>
           ) : (
             <p className="text-sm text-muted">Not scored yet — queued for the Lead Qualification Specialist.</p>
           )}

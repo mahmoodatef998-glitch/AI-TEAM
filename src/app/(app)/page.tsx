@@ -101,7 +101,7 @@ export default async function ExecutiveDashboard() {
           {user.role === "admin" && (
             <ActionForm action={setTargetAction} className="mt-4 flex flex-wrap items-end gap-3">
               <Field label="Period (YYYY-MM)"><input name="period" defaultValue={period} className="field w-32" /></Field>
-              <Field label="Closed revenue target (AED)"><input name="value" type="number" min="1" step="1000" defaultValue={target?.value ?? ""} className="field w-48" /></Field>
+              <Field label="Closed revenue target (AED)"><input name="value" type="number" min="1" step="any" defaultValue={target?.value ?? ""} className="field w-48" /></Field>
               <Submit>Save target</Submit>
             </ActionForm>
           )}
