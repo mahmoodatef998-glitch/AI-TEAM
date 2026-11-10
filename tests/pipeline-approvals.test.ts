@@ -129,3 +129,22 @@ describe("human approval system", () => {
     expect(a.executionStatus).toBe("executed");
   });
 });
+
+describe("manual outreach (no AI key)", () => {
+  it("goes through the same approval gate and moves the deal forward only after it is sent", async () => {
+    const { submitManualOutreach } = await import("@/lib/domain/outreach");
+    const { contacts } = await import("@/lib/db/schema");
+    const { db, opp, manager, companyId } = await setup();
+    const [c] = await db.select().from(contacts).where(eq(contacts.companyId, companyId));
+    const r = await submitManualOutreach(db, { opportunityId: opp.id, contactId: c.id, channel: "email", subject: "Intro", body: "Dear team, …" }, manager.id);
+    const [o1] = await db.select().from(opportunities);
+    expect(o1.stage).toBe("awaiting_approval");
+    setEmailSender(null);
+    const d = await decideApproval(db, r.approvalId, "approved", manager);
+    expect(d.execution.status).toBe("manual_required");
+    await markInteractionSent(db, r.interactionId, { type: "user", id: manager.id });
+    const [o2] = await db.select().from(opportunities);
+    expect(o2.stage).toBe("contacted");
+    await expect(submitManualOutreach(db, { opportunityId: opp.id, contactId: c.id, channel: "email", body: " " }, manager.id)).rejects.toThrow(/required/);
+  });
+});

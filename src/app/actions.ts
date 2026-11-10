@@ -25,6 +25,7 @@ import { decideApproval, markInteractionSent, requestApproval } from "@/lib/doma
 import { assignLead, reassignAccount } from "@/lib/domain/assignment";
 import { getEmployeeByRole } from "@/lib/domain/employees";
 import { intakeLead } from "@/lib/domain/leads";
+import { submitManualOutreach } from "@/lib/domain/outreach";
 import { completeFollowUp, scheduleFollowUp, setNextAction, transitionOpportunity, type Stage } from "@/lib/domain/pipeline";
 import { cancelTask, createTask, requeueTask } from "@/lib/domain/tasks";
 import { cronMatches } from "@/lib/agents/cron";
@@ -342,18 +343,37 @@ export async function requestWonAction(_: ActionState, form: FormData): Promise<
   }, "Won approval requested.", ["/approvals"]);
 }
 
+export async function manualOutreachAction(_: ActionState, form: FormData): Promise<ActionState> {
+  return guard(async () => {
+    const u = await requireRole(WRITE_ROLES);
+    await submitManualOutreach(
+      getDb(),
+      {
+        opportunityId: s(form, "opportunityId")!,
+        contactId: s(form, "contactId") ?? "",
+        channel: s(form, "channel") === "linkedin" ? "linkedin" : "email",
+        subject: s(form, "subject"),
+        body: s(form, "body") ?? "",
+      },
+      u.id,
+    );
+  }, "Sent for approval — see the Approvals page.", ["/approvals"]);
+}
+
 // ───────────── approvals ─────────────
 
 export async function decideApprovalAction(_: ActionState, form: FormData): Promise<ActionState> {
+  const approvalId = s(form, "approvalId")!;
   try {
     const u = await requireRole(["admin", "sales_manager", "marketing_manager"]);
-    const r = await decideApproval(getDb(), s(form, "approvalId")!, s(form, "decision") as "approved" | "rejected", u, s(form, "note") ?? undefined);
+    await decideApproval(getDb(), approvalId, s(form, "decision") as "approved" | "rejected", u, s(form, "note") ?? undefined);
     kickQueue();
     revalidatePath("/approvals");
-    return { ok: `${r.decision === "approved" ? "Approved" : "Rejected"}.${r.execution.detail ? ` ${r.execution.detail}` : ""}` };
   } catch (e) {
     return { error: (e as Error).message };
   }
+  // The decided item leaves the pending list, so show the outcome as a banner on the page.
+  redirect(`/approvals?decided=${approvalId}`);
 }
 
 // ───────────── tasks & agents ─────────────

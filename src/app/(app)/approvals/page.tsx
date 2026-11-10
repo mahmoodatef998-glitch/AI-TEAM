@@ -7,9 +7,11 @@ import { ActionForm } from "@/components/forms";
 import { A, Badge, Card, Empty, fmtDateTime, PageHeader, StatusBadge } from "@/components/ui";
 import { APPROVAL_POLICY, canDecide } from "@/lib/domain/approvals";
 
-export default async function ApprovalsPage() {
+export default async function ApprovalsPage({ searchParams }: { searchParams: Promise<{ decided?: string }> }) {
   const user = await requireUser();
   const db = getDb();
+  const { decided } = await searchParams;
+  const [justDecided] = decided && /^[0-9a-f-]{36}$/.test(decided) ? await db.select().from(approvals).where(eq(approvals.id, decided)) : [];
   const pending = await db
     .select({ a: approvals, emp: aiEmployees.name, empId: aiEmployees.id })
     .from(approvals)
@@ -28,6 +30,14 @@ export default async function ApprovalsPage() {
   return (
     <div className="space-y-6">
       <PageHeader title="Approvals" subtitle="External communication, quotations, prices, discounts, delivery/technical commitments, campaigns, publishing and won deals always require a human decision." />
+      {justDecided && justDecided.status !== "pending" && (
+        <div role="status" className={`rounded-lg border p-4 text-sm ${justDecided.status === "approved" ? "border-ok/40 bg-ok/5" : "border-danger/40 bg-danger/5"}`}>
+          <div className="font-medium">{justDecided.status === "approved" ? "Approved" : "Rejected"}: {justDecided.title}</div>
+          {justDecided.executionDetail && <p className="mt-1">{justDecided.executionDetail}</p>}
+          {justDecided.status === "rejected" && justDecided.requestedByEmployeeId && <p className="mt-1 text-muted">The AI employee will redraft using your feedback.</p>}
+          {justDecided.relatedType === "opportunity" && justDecided.relatedId && <p className="mt-2"><A href={`/opportunities/${justDecided.relatedId}`}>Open the opportunity</A></p>}
+        </div>
+      )}
       <Card title={`Pending (${pending.length})`}>
         {pending.length === 0 ? <Empty title="Nothing waiting for approval" /> : (
           <div className="space-y-4">

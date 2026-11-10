@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { getDb } from "@/lib/db";
 import { aiEmployees, companies, contacts, followUps, interactions, opportunities, rfqs, stageTransitions, users } from "@/lib/db/schema";
 import { requireUser } from "@/lib/auth/session";
-import { completeFollowUpAction, followUpAction, logInteractionAction, markSentAction, nextActionAction, reassignAction, receiveRfqAction, requestWonAction, setValueAction, transitionAction } from "@/app/actions";
+import { completeFollowUpAction, followUpAction, logInteractionAction, manualOutreachAction, markSentAction, nextActionAction, reassignAction, receiveRfqAction, requestWonAction, setValueAction, transitionAction } from "@/app/actions";
 import { ActionForm, Field, Submit } from "@/components/forms";
 import { A, Avatar, Badge, Card, Empty, fmtAed, fmtDate, fmtDateTime, humanize, PageHeader, StatusBadge, Table, Td } from "@/components/ui";
 import { listSalesExecutives } from "@/lib/domain/employees";
@@ -106,6 +106,22 @@ export default async function OpportunityPage({ params }: { params: Promise<{ id
             </ActionForm>
           </Card>
         </div>
+      )}
+
+      {canWrite && !closed && cts.length > 0 && (
+        <Card title="Write outreach yourself (no AI needed) — goes to approval">
+          <ActionForm action={manualOutreachAction}>
+            <input type="hidden" name="opportunityId" value={id} />
+            <div className="grid gap-3 sm:grid-cols-3">
+              <Field label="To"><select name="contactId" className="field">{cts.map((c) => <option key={c.id} value={c.id}>{c.name ?? c.jobTitle ?? "Contact"}{c.email ? ` — ${c.email}` : ""}</option>)}</select></Field>
+              <Field label="Channel"><select name="channel" className="field"><option value="email">Email</option><option value="linkedin">LinkedIn</option></select></Field>
+              <Field label="Subject"><input name="subject" className="field" /></Field>
+            </div>
+            <Field label="Message"><textarea name="body" rows={5} required className="field" /></Field>
+            <p className="text-xs text-muted">Nothing is sent until an approver approves it. Without an email integration you then send it yourself and click “Mark as sent”.</p>
+            <Submit>Send for approval</Submit>
+          </ActionForm>
+        </Card>
       )}
 
       <div className="grid gap-6 xl:grid-cols-2">

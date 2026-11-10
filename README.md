@@ -38,6 +38,7 @@ You don't need a separate worker host. Instead, call `POST /api/cron/tick` with 
   - "Won" requires evidence and a human approval.
   - AI employees cannot move deals backwards.
 - **Human approvals** with role-based access for all external or commercial actions. A rejection sends feedback into an automatic redraft loop.
+- **Manual outreach without AI**: write the message yourself on an opportunity; it goes through the same approval gate, then "Mark as sent" moves the deal to Contacted and schedules a follow-up.
 - **Follow-ups**, a daily pipeline review with escalation, and daily and weekly reports and meetings generated from live data.
 - **KPI plan**: a revenue target is reverse-calculated into required wins, quotations, RFQs and opportunities. Figures use historical rates when there is enough data, otherwise they are clearly labelled assumptions.
 - **Technical RFQ analysis**: missing information, conflicts (for example prime > standby, or an ATS below full-load current), a 60 Hz caution, catalogue matching and a compliance matrix.
