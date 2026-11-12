@@ -21,9 +21,24 @@ You don't need a separate worker host. Instead, call `POST /api/cron/tick` with 
 
 | Command | Purpose |
 |---|---|
-| `npm test` | 45 tests on in-process PostgreSQL (PGlite) using the real migrations |
+| `npm test` | Tests on in-process PostgreSQL (PGlite) using the real migrations |
 | `npm run typecheck` / `npm run lint` | TypeScript and ESLint (zero warnings) |
 | `npm run db:generate` | Generate a migration after editing `src/lib/db/schema.ts` |
+
+### Health check
+
+`GET /api/health` returns `{"status":"ok"}` (200) or `{"status":"error"}` (503), for uptime monitors. With `Authorization: Bearer $CRON_SECRET` it also explains why the database is or is not reachable (DNS, TLS, password, pooler user, missing tables, missing seed) and which optional keys are set. It never returns secret values.
+
+```bash
+curl -H "Authorization: Bearer $CRON_SECRET" https://<your-app>/api/health
+```
+
+### Deploying on Vercel with Supabase
+
+- Use Supabase's **Transaction pooler** URL (port 6543, user `postgres.<project-ref>`). The direct host `db.<ref>.supabase.co` is IPv6-only and Vercel cannot reach it.
+- Append `?sslmode=require&uselibpqcompat=true`. Without `uselibpqcompat`, node-postgres treats `require` as full certificate verification and rejects Supabase's CA.
+- Set the Vercel Function Region to the one closest to the database (for `ap-south-1`, choose `bom1`).
+- The app talks to Postgres directly as the table owner, so Supabase's Data API (anon/authenticated keys) must not reach these tables. On a new Supabase project, enable RLS on every `public` table and revoke `anon` and `authenticated` grants, including default privileges for tables created by later migrations.
 
 ## What works today (no API keys required)
 

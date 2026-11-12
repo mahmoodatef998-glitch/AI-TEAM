@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { after } from "next/server";
 import { getDb } from "@/lib/db";
+import { classifyDbError } from "@/lib/db/health";
 import {
   businessTargets,
   knowledgeItems,
@@ -69,12 +70,19 @@ export async function loginAction(_: ActionState, form: FormData): Promise<Actio
   const email = s(form, "email")?.toLowerCase();
   const password = s(form, "password");
   if (!email || !password) return { error: "Email and password are required." };
-  const [u] = await getDb().select().from(users).where(eq(users.email, email));
-  if (!u || !u.active || !(await verifyPassword(password, u.passwordHash))) {
-    return { error: "Those credentials don't match an active account." };
+  try {
+    const [u] = await getDb().select().from(users).where(eq(users.email, email));
+    if (!u || !u.active || !(await verifyPassword(password, u.passwordHash))) {
+      return { error: "Those credentials don't match an active account." };
+    }
+    await createSession(u.id);
+    await logActivity(getDb(), userActor(u.id), "user.login", `${u.name} signed in`);
+  } catch (e) {
+    const d = classifyDbError(e);
+    console.error(`[login] database error (${d.kind}${d.code ? `, ${d.code}` : ""}): ${d.message}`);
+    return { error: `Sign-in is unavailable: the server cannot reach its database (${d.kind.replace(/_/g, " ")}). ${d.hint}` };
   }
-  await createSession(u.id);
-  await logActivity(getDb(), userActor(u.id), "user.login", `${u.name} signed in`);
+  // redirect() throws, so it must stay outside the try block.
   redirect("/");
 }
 

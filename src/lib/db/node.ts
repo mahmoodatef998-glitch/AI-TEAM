@@ -6,6 +6,6 @@ import type { DB } from "./types";
 
 export function createNodeDb(url = process.env.DATABASE_URL): { db: DB; pool: Pool } {
   if (!url) throw new Error("DATABASE_URL is not configured");
-  const pool = new Pool({ connectionString: url, max: 5 });
+  const pool = new Pool({ connectionString: url, max: 5, connectionTimeoutMillis: 10_000 });
   return { db: drizzle(pool, { schema }) as unknown as DB, pool };
 }
