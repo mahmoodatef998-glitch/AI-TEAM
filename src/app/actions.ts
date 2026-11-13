@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 import { after } from "next/server";
 import { getDb } from "@/lib/db";
 import { classifyDbError } from "@/lib/db/health";
+import { sendToEmployee } from "@/lib/domain/assignments";
 import {
   businessTargets,
   knowledgeItems,
@@ -413,6 +414,20 @@ export async function launchTaskAction(_: ActionState, form: FormData): Promise<
     kickQueue();
     revalidatePath("/tasks");
     return { ok: `Task assigned to ${e.name}.` };
+  } catch (e) {
+    return { error: (e as Error).message };
+  }
+}
+
+// ───────────── team chat ─────────────
+
+/** Send a chat message to an employee: answers their open question, or gives them a new task. */
+export async function sendToEmployeeAction(employeeId: string, text: string): Promise<ActionState & { kind?: "answer" | "assignment" }> {
+  try {
+    const u = await requireRole(WRITE_ROLES);
+    const r = await sendToEmployee(getDb(), { userId: u.id, employeeId, text });
+    kickQueue();
+    return { ok: r.kind === "answer" ? "Answer sent." : "Task assigned.", kind: r.kind };
   } catch (e) {
     return { error: (e as Error).message };
   }

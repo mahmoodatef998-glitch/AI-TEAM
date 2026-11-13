@@ -40,6 +40,11 @@ curl -H "Authorization: Bearer $CRON_SECRET" https://<your-app>/api/health
 - Set the Vercel Function Region to the one closest to the database (for `ap-south-1`, choose `bom1`).
 - The app talks to Postgres directly as the table owner, so Supabase's Data API (anon/authenticated keys) must not reach these tables. On a new Supabase project, enable RLS on every `public` table and revoke `anon` and `authenticated` grants, including default privileges for tables created by later migrations.
 
+## Team chat and office life
+
+- **Team chat** (`/team`): message any AI employee to give them a task. If they need something they ask you one question at a time (up to 4), and your next message to them is the answer. When they finish they send a report card (summary, next steps, assumptions, full Markdown report), also saved under Reports. Every employee can take chat tasks (`assignment.work`). Without `ANTHROPIC_API_KEY` the task shows as blocked with a **Try again** button.
+- **Office life** (Virtual office toggle, on by default, off with reduced motion): employees with no active work take decorative breaks in the pantry, restrooms and lounge, visit colleagues and greet each other in the corridors. Real work always interrupts a break; coloured bubbles are real work, emoji are breaks. "Needs you" marks someone waiting for your answer.
+
 ## What works today (no API keys required)
 
 - **Lead intake** (manual or by agents) with duplicate prevention by domain or normalised name. Every lead and contact needs a source URL, and collected emails are stored as *unverified*.

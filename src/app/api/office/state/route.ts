@@ -1,4 +1,5 @@
-import { desc, eq, gte, inArray } from "drizzle-orm";
+import { and, desc, eq, gte, inArray, sql } from "drizzle-orm";
+import { ASSIGNMENT_TASK } from "@/lib/domain/assignments";
 import { NextResponse } from "next/server";
 import { getDb } from "@/lib/db";
 import { activityLog, aiEmployees, approvals, departments, messages, tasks } from "@/lib/db/schema";
@@ -12,8 +13,21 @@ export const dynamic = "force-dynamic";
  * approval, complete or fail; collaboration lines come from real internal messages.
  */
 export async function GET() {
-  if (!(await getCurrentUser())) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  const user = await getCurrentUser();
+  if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   const db = getDb();
+  const waiting = await db
+    .select({ id: tasks.assigneeEmployeeId })
+    .from(tasks)
+    .where(
+      and(
+        eq(tasks.type, ASSIGNMENT_TASK),
+        eq(tasks.status, "blocked"),
+        sql`${tasks.output}->>'awaitingUser' = 'true'`,
+        sql`${tasks.input}->>'requestedByUserId' = ${user.id}`,
+      ),
+    );
+  const waitingForYou = new Set(waiting.map((w) => w.id));
   const since = new Date(Date.now() - 120_000);
   const [emps, depts, recentMsgs, feed, pending] = await Promise.all([
     db.select().from(aiEmployees).where(eq(aiEmployees.active, true)).orderBy(aiEmployees.code),
@@ -35,6 +49,7 @@ export async function GET() {
         status: e.status, location: e.location, homeZone: deptZone.get(e.departmentId),
         detail: e.statusDetail, task: t ? { title: t.title, progress: t.progress, type: t.type } : null,
         lastActiveAt: e.lastActiveAt,
+        awaitingYou: waitingForYou.has(e.id),
       };
     }),
     collaboration: recentMsgs.filter((m) => m.from && m.to).map((m) => ({ id: m.id, from: m.from, to: m.to, kind: m.kind, subject: m.subject, at: m.at })),

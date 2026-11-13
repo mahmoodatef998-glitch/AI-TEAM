@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 
 const ITEMS = [
   { href: "/", label: "Executive" },
+  { href: "/team", label: "Team chat", badge: "team" },
   { href: "/office", label: "Virtual office" },
   { href: "/sales", label: "Sales team" },
   { href: "/pipeline", label: "Pipeline" },
@@ -20,13 +21,20 @@ const ITEMS = [
   { href: "/settings", label: "Settings" },
 ] as const;
 
-export function Nav({ pendingApprovals, blockedTasks }: { pendingApprovals: number; blockedTasks: number }) {
+const BADGE_STYLE = {
+  approvals: "bg-amber-500/20 text-amber-700 dark:text-amber-400",
+  blocked: "bg-red-500/15 text-red-700 dark:text-red-400",
+  team: "bg-accent text-accent-fg",
+} as const;
+
+export function Nav({ pendingApprovals, blockedTasks, teamUnread }: { pendingApprovals: number; blockedTasks: number; teamUnread: number }) {
   const path = usePathname();
+  const counts = { approvals: pendingApprovals, blocked: blockedTasks, team: teamUnread };
   return (
     <nav aria-label="Main" className="flex gap-1 overflow-x-auto px-2 pb-2 lg:block lg:space-y-0.5 lg:overflow-visible lg:pb-24">
       {ITEMS.map((i) => {
         const active = i.href === "/" ? path === "/" : path.startsWith(i.href);
-        const count = "badge" in i ? (i.badge === "approvals" ? pendingApprovals : blockedTasks) : 0;
+        const count = "badge" in i ? counts[i.badge] : 0;
         return (
           <Link
             key={i.href}
@@ -35,7 +43,7 @@ export function Nav({ pendingApprovals, blockedTasks }: { pendingApprovals: numb
           >
             {i.label}
             {count > 0 && (
-              <span className={`rounded-full px-1.5 text-[11px] font-semibold ${"badge" in i && i.badge === "approvals" ? "bg-amber-500/20 text-amber-700 dark:text-amber-400" : "bg-red-500/15 text-red-700 dark:text-red-400"}`}>{count}</span>
+              <span className={`rounded-full px-1.5 text-[11px] font-semibold ${"badge" in i ? BADGE_STYLE[i.badge] : ""}`}>{count}</span>
             )}
           </Link>
         );

@@ -4,8 +4,13 @@ import { leadDiscover, leadQualify, leadResearch } from "./skills/leadgen";
 import { adsReview, competitorResearch, contentDraft, marketingPlan, seoAudit } from "./skills/marketing";
 import { followUpPrepare, leadAssign, opportunityOnboard, outreachDraft, pipelineReview, salesReviewMeeting } from "./skills/sales";
 import { rfqAnalyze } from "./skills/technical";
+import { assignmentWork } from "./skills/assignment";
+
+/** Skills every employee may perform, regardless of their role's skill list. */
+export const UNIVERSAL_SKILLS = new Set([assignmentWork.type]);
 
 const ALL: Skill[] = [
+  assignmentWork,
   kpiPlan, dailyBriefing, weeklyExecMeeting, dailyPerformanceReport,
   leadAssign, pipelineReview, salesReviewMeeting, opportunityOnboard, outreachDraft, followUpPrepare,
   leadDiscover, leadResearch, leadQualify,

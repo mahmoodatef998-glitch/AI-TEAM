@@ -6,7 +6,7 @@ import { logActivity, type Actor } from "@/lib/domain/activity";
 import { getEmployee } from "@/lib/domain/employees";
 import { blockTask, completeTask, failTask, markWaitingApproval, setTaskProgress, type Task } from "@/lib/domain/tasks";
 import { tasks } from "@/lib/db/schema";
-import { getSkill } from "./registry";
+import { getSkill, UNIVERSAL_SKILLS } from "./registry";
 import { NonRetryableError, type SkillResult } from "./types";
 
 /**
@@ -28,7 +28,7 @@ export async function executeTask(db: DB, task: Task): Promise<SkillResult | { s
     await blockTask(db, task.id, `Skill '${task.type}' is not implemented yet.`);
     return { status: "blocked", reason: `Skill '${task.type}' is not implemented yet.` };
   }
-  if (!employee.skills.includes(task.type)) {
+  if (!employee.skills.includes(task.type) && !UNIVERSAL_SKILLS.has(task.type)) {
     const error = `${employee.name} (${employee.title}) is not authorised to perform '${task.type}'.`;
     await db.update(tasks).set({ status: "failed", error, lockedBy: null, lockedAt: null, completedAt: new Date() }).where(eq(tasks.id, task.id));
     await logActivity(db, actor, "task.failed", error, { entityType: "task", entityId: task.id });
